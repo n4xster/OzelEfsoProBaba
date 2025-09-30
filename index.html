@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Karakter Kartı Üretici</title>
+    <title>Discord Karakter Kartı Üretici v3</title>
     <style>
         /* Discord Dark Theme Stilleri */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #36393f; color: #ffffff; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; }
-        .card { background-color: #2f3136; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 5px solid; }
-        .card-tier-10 { border-color: #ff9900; } /* Mutlak */
-        .card-tier-8 { border-color: #cc00ff; } /* Efsanevi */
-        .card-tier-5 { border-color: #00bfff; } /* Destansı */
-        .card-tier-3 { border-color: #33cc33; } /* Nadir */
-        .card-tier-1 { border-color: #999999; } /* Yaygın */
+        
+        /* Kart Stilleri */
+        .card { background-color: #2f3136; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 5px solid; position: relative; }
+        .card-tier-10 { border-color: #ff9900; } /* Mutlak (Turuncu) */
+        .card-tier-8 { border-color: #cc00ff; } /* Efsanevi (Mor) */
+        .card-tier-5 { border-color: #00bfff; } /* Destansı (Açık Mavi) */
+        .card-tier-3 { border-color: #33cc33; } /* Nadir (Yeşil) */
+        .card-tier-1 { border-color: #999999; } /* Yaygın (Gri) */
 
         .header { display: flex; align-items: center; margin-bottom: 10px; }
         .name { font-size: 24px; font-weight: bold; color: #7289da; margin-left: 10px; }
@@ -28,15 +30,33 @@
         .power-list li { margin-bottom: 8px; line-height: 1.4; }
         .power-list li strong { color: #f0b873; margin-right: 5px; }
 
-        button { padding: 10px 20px; background-color: #7289da; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-bottom: 20px; }
-        button:hover { background-color: #677bc4; }
+        /* Buton ve Input Stilleri */
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .controls input, .controls select { padding: 8px; border-radius: 4px; border: 1px solid #5865f2; background-color: #202225; color: #ffffff; }
+        button { padding: 10px 20px; background-color: #5865f2; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; }
+        button:hover { background-color: #4752c4; }
+        
+        .copy-button { position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 12px; background-color: #3ba55d; }
+        .copy-button:hover { background-color: #2e8b57; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>Discord Karakter Üretici</h1>
-        <button onclick="generateCharacter()">Yeni Karakter Üret</button>
+        
+        <div class="controls">
+            <input type="text" id="customName" placeholder="Özel Ad (Boş bırakılabilir)">
+            <select id="customTheme">
+                <option value="random">Rastgele Konu</option>
+                <option value="elemental">Element / Doğa</option>
+                <option value="zamanUzay">Zaman / Uzay</option>
+                <option value="biyolojikZihinsel">Biyolojik / Zihinsel</option>
+                <option value="fiziksel">Fiziksel / Silah</option>
+            </select>
+            <button onclick="generateCharacter()">Karakter Üret</button>
+        </div>
+
         <div id="characterOutput">
             </div>
     </div>
@@ -44,122 +64,175 @@
     <script>
         // Rastgele seçim fonksiyonu
         const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        
+        // 5'in katı olarak rastgele sayı üreten fonksiyon
+        const getRandomMultipleOfFive = (min, max) => {
+            // min ve max aralığında rastgele bir sayı al
+            let num = Math.floor(Math.random() * (max - min + 1)) + min;
+            // Sayıyı 5'in katına yuvarla (en yakın 5'in katı)
+            return Math.ceil(num / 5) * 5; 
+        };
+        const getRandomTier = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-        // 1. İsim Listeleri (100'den fazla girdi için kısaltılmıştır)
+
+        // 1. İsim Listeleri (Temalarla uyumlu)
         const latinceIsimler = [
             "Aeternus", "Bellator", "Vindex", "Ignis", "Umbra", "Caelus", "Lux", "Veritas", "Tempus", "Ferrum",
-            "Mantis", "Serpens", "Astralix", "Nexus", "Dominus", "Silentium", "Kyron", "Oblivion", "Spectre", "Zenith"
-            //... 100'e tamamlanacak
+            "Mantis", "Serpens", "Astralix", "Nexus", "Dominus", "Silentium", "Kyron", "Oblivion", "Spectre", "Zenith",
+            "Divinus", "Orion", "Titanus", "Solis", "Lunae", "Tenebra", "Fulmen", "Aqua", "Terra", "Aura"
         ];
         const ingilizceIsimler = [
             "Vortex", "Chronos", "Sentinel", "Revenant", "Phantom", "Aether", "Titan", "Zero", "Echo", "Shade",
-            "Warlock", "Juggernaut", "Overlord", "Nomad", "Viper", "Glitch", "Adept", "Storm", "Blaze", "Ironclad"
-            //... 100'e tamamlanacak
+            "Warlock", "Juggernaut", "Overlord", "Nomad", "Viper", "Glitch", "Adept", "Storm", "Blaze", "Ironclad", 
+            "Magus", "Rogue", "Paladin", "Slayer", "Guardian", "Wasteland", "Cypher", "Breaker", "Abyss", "Catalyst"
         ];
-
-        // 2. Güç Listeleri (Her temada en az 10 farklı güç)
+        
+        // 2. Güç Listeleri (Genişletilmiş ve Tematik)
         const gucTemalari = {
             elemental: [
-                "Plazma Manipülasyonu: Saf enerji patlamaları üretir.",
-                "Mutlak Sıfır Üretme: Dokunduğu yeri anında dondurur.",
-                "Kozmik Ateş Fırlatma: Yüksek yoğunluklu alevler oluşturur.",
-                "Deprem Yaratma: Bölgesel sarsıntılar başlatır.",
-                "Asit Yağmuru Çağırma: Alan etkili aşındırıcı sıvı yağdırır.",
-                "Elektrik Fırtınası: Geniş alanda elektrik yükü oluşturur.",
-                "Hava Vakumu Yaratma: Rakibin nefesini keser.",
-                "Saf Su Manipülasyonu: Suyu dilediği forma sokar."
-                //... 100'e tamamlanacak
+                "Plazma Manipülasyonu: Saf enerji patlamaları üretir ve enerji alanlarını saptırır.",
+                "Mutlak Sıfır Üretme: Dokunduğu yeri ve havanın nemini anında dondurur; rakibin hızını yavaşlatır.",
+                "Kozmik Ateş Fırlatma: Yüksek yoğunluklu ve yokedici alevler oluşturur, yanma etkisi güçlüdür.",
+                "Deprem Yaratma: Bölgesel sarsıntılar başlatır; rakibin dengesini bozar ve çevreye hasar verir.",
+                "Asit Yağmuru Çağırma: Alan etkili aşındırıcı sıvı yağdırır; zırhları ve dayanıklılığı azaltır.",
+                "Elektrik Fırtınası: Geniş alanda kontrol edilemez elektrik yükü oluşturur; elektronik cihazları bozar.",
+                "Hava Vakumu Yaratma: Bölgesel hava basıncını düşürür; rakibin nefesini keser ve iç hasar verir.",
+                "Saf Su Manipülasyonu: Suyu dilediği forma (buz, buhar, sıvı) sokar ve mermi hızında fırlatır.",
+                "Yıldırım Hızı: Elektrik akımıyla vücut hızını kısa süreliğine ışınlanma hissine yaklaştırır.",
+                "Mıknatıs Kontrolü: Yüksek manyetik alanlar yaratarak metal eşyaları saptırır veya çeker."
             ],
             zamanUzay: [
-                "Zaman Algısı Manipülasyonu: Yakın çevrenin algısını yavaşlatır.",
-                "Kısa Süreli Geri Sarma: Kendisini 5 saniye geriye ışınlar.",
-                "Gelecek Varsayımı Simülasyonu: Olası sonuçları hesaplar.",
-                "Boyutlar Arası Atlama: Kısa mesafede boyut değiştirerek hasardan kaçar.",
-                "Yerçekimi Tersine Çevirme: Bölgesel yerçekimini kontrol eder.",
-                "Uzay-Zaman Bükülmesi: Atılan cisimleri yörüngesinden çıkarır.",
-                "Hızlandırma Küresi: Bölgesel hız çarpanı oluşturur.",
-                "Tılsımlı Işınlanma: Görmediği yerlere işaret bırakıp tplenebilir."
-                //... 100'e tamamlanacak
+                "Zaman Algısı Manipülasyonu: Yakın çevrenin algısını yavaşlatır; kendisine refleks ve hız avantajı sağlar.",
+                "Kısa Süreli Geri Sarma: Kendisini ve yakınındaki bir nesneyi 5 saniye geriye ışınlar (hata düzeltme).",
+                "Gelecek Varsayımı Simülasyonu: Olası sonuçları simüle ederek düşmanın hamlelerini tahmin eder.",
+                "Boyutlar Arası Atlama: Kısa mesafede boyut değiştirerek fiziksel ve enerji hasarından kaçar.",
+                "Yerçekimi Tersine Çevirme: Bölgesel yerçekimini kontrol eder; rakibi havaya kaldırır veya yere sabitler.",
+                "Uzay-Zaman Bükülmesi: Atılan cisimleri ve enerji atışlarını yörüngesinden çıkararak etkisizleştirir.",
+                "Hızlandırma Küresi: Bölgesel bir küre içinde zamanı hızlandırır; yenilenme ve saldırı hızını artırır.",
+                "Tılsımlı Işınlanma: Görmediği yerlere anında tplenir; kovalanamaz ve izlenemez.",
+                "Paradoks Yaratma: Rakibin bir gücünün geçici olarak kendisine karşı çalışmasına neden olur.",
+                "Olasılık Manipülasyonu: Olayların kritik veya başarısız olma olasılığını kısa süreliğine değiştirir."
             ],
             biyolojikZihinsel: [
-                "Nanobot - Hızlı Yenilenme: Küçük yaraları anında iyileştirir.",
-                "Kimyasal Manipülasyon: Bayıltıcı gazlar ve zehirler üretir.",
-                "Zihin Kalkanı: Zihinsel okuma ve saldırıları engeller.",
-                "Korku Manipülasyonu: Rakibin en derin korkusunu fizikselleştirir.",
-                "Genetik Mutasyon: Kendi vücudunu geçici olarak güçlendirir.",
-                "Psişik Darbe: Saf zihinsel enerjiyle hasar verir.",
-                "Hücre Hızlandırma: Rakibin yaşlanma hızını artırır.",
-                "Görünmez Ordu Yaratma: Nanobotlarla minik klonlar yaratır."
-                //... 100'e tamamlanacak
+                "Nanobot - Hızlı Yenilenme: Küçük yaraları anında iyileştirir; uzuv kopması durumunda yavaş onarım yapar.",
+                "Kimyasal Manipülasyon: Bayıltıcı gazlar, zehirler ve patlayıcı reaksiyonlar üretebilir.",
+                "Zihin Kalkanı: Zihinsel okuma, algı manipülasyonu ve zihin kontrolünü tamamen engeller.",
+                "Korku Manipülasyonu: Rakibin en derin korkusunu fizikselleştirir; gerçek sanrı görmesine neden olur.",
+                "Genetik Mutasyon: Kendi vücudunu geçici olarak güçlendirir; kuvvet ve dayanıklılığı katlar.",
+                "Psişik Darbe: Saf zihinsel enerjiyle hasar verir; zihinsel kapasitesi düşük rakipleri bayıltabilir.",
+                "Hücre Hızlandırma: Rakibin yaşlanma hızını kontrol eder; kısa süreliğine gücünü azaltır.",
+                "Görünmez Ordu Yaratma: Nanobotlarla küçük, görünmez klonlar (drone) yaratarak çevre analizi yapar.",
+                "Biyolojik Kontrol: Hedefin hücrelerini yavaşlatır; hedefi kısa süreliğine felç eder.",
+                "Enerji Absorpsiyonu: Rakibin aktif güçlerinden çıkan enerjiyi emer ve kendi Can/Kuvvetine dönüştürür."
             ],
             fiziksel: [
-                "Güç Çalma: Vurulan kişinin gücünün %10'unu anlık çalar.",
-                "Bedrock Vücut: Fiziksel güçlere karşı çok yüksek dayanıklılık.",
-                "Işık Hızına Yakın Hareket: Hızından dolayı algılanamaz.",
-                "Şok Dalgası: Yumruklarıyla duvarları parçalayan şok dalgaları yayar.",
-                "İtem Çalma: Vurduğunda rakibin elindeki eşyayı çalar.",
-                "Yok Olma (Spam): Anlık kaybolma ve belirme yeteneği.",
-                "Sessiz Hareket: İz bırakmaz ve ses çıkarmaz.",
-                "Ağır Silah Uzmanlığı: Her türlü mühimmatı anında şekillendirir."
-                //... 100'e tamamlanacak
+                "Güç Çalma: Vurulan kişinin gücünün %10'unu anlık çalar ve kendisine ekler (Geçici).",
+                "Bedrock Vücut: Fiziksel güçlere karşı mutlak dayanıklılık; uzvu kopmaz, bayılamaz.",
+                "Işık Hızına Yakın Hareket: Hızından dolayı algılanamaz ve izlenemez; şimşek hızında saldırır.",
+                "Şok Dalgası: Yumruklarıyla duvarları parçalayan, geniş alanda şok dalgaları yayar.",
+                "İtem Çalma: Vurduğunda rakibin elindeki eşyayı (Özel dahil) anında çalar.",
+                "Yok Olma (Spam): Anlık kaybolma ve belirme yeteneği; düşmanı şaşırtır.",
+                "Sessiz Hareket: İz bırakmaz, ses çıkarmaz ve plan yapma konusunda çok iyidir.",
+                "Ağır Silah Uzmanlığı: Uçan veya sabit her türlü mühimmatı ve zırhı anında kontrol edebilir.",
+                "Fizik Manipülasyonu: Fiziğin tüm yasalarını (yerçekimi, sürtünme) bölgesel kontrol edebilir.",
+                "Bıçak Fırlatma: Fırlatılan bıçaklar Wither efekti verir ve hedefin enerjisini düşürür."
             ]
         };
 
         function generateCharacter() {
             const outputDiv = document.getElementById('characterOutput');
+            const customName = document.getElementById('customName').value.trim();
+            const customTheme = document.getElementById('customTheme').value;
 
-            // 1. Tier ve İsim Belirleme
-            const tier = getRandomInt(1, 10);
-            const isim = getRandomItem(getRandomInt(0, 1) ? latinceIsimler : ingilizceIsimler);
+            // 1. Tier Belirleme
+            const tier = getRandomTier(1, 10);
             
-            // 2. Can, Kuvvet ve Yenilenme Hesaplama (Tier'a göre ölçekleme)
-            const canMax = tier * 200; // Max Can 2000 (Tier 10 için)
-            const kuvvetMax = tier * 100; // Max Kuvvet 1000 (Tier 10 için)
-            const yenilenmeMax = tier * 20; // Max Yenilenme 200 (Tier 10 için)
+            // 2. İsim Belirleme
+            const isim = customName || getRandomItem(getRandomTier(0, 1) ? latinceIsimler : ingilizceIsimler);
             
-            const can = getRandomInt(canMax * 0.7, canMax);
-            const kuvvet = getRandomInt(kuvvetMax * 0.7, kuvvetMax);
-            const yenilenme = getRandomInt(yenilenmeMax * 0.7, yenilenmeMax);
+            // 3. Can, Kuvvet ve Yenilenme Hesaplama (Hepsi 5'in Katı)
+            const canMax = tier * 200;
+            const kuvvetMax = tier * 100;
+            const yenilenmeMax = tier * 20;
             
-            // 3. Güç Belirleme (Tier'a göre güç sayısı)
-            const gucSayisi = Math.ceil(tier / 2) + 2; // Tier 1 için 3, Tier 10 için 7 güç
+            const can = getRandomMultipleOfFive(canMax * 0.7, canMax);
+            const kuvvet = getRandomMultipleOfFive(kuvvetMax * 0.7, kuvvetMax);
+            const yenilenme = getRandomMultipleOfFive(yenilenmeMax * 0.7, yenilenmeMax);
+            
+            // 4. Güç Belirleme (Tier'a göre güç sayısı ve özel tema)
+            const gucSayisi = Math.ceil(tier / 2) + 2; 
             let secilenGucler = new Set();
-            const tumTemalar = Object.keys(gucTemalari);
             
+            // Özel tema seçildiyse sadece o temayı kullan, yoksa tüm temaları kullan
+            const temaHavuzu = customTheme === 'random' ? Object.keys(gucTemalari) : [customTheme];
+
             for (let i = 0; i < gucSayisi; i++) {
-                const temaAdi = getRandomItem(tumTemalar);
+                const temaAdi = getRandomItem(temaHavuzu);
                 let guc = getRandomItem(gucTemalari[temaAdi]);
                 
-                // Aynı gücü tekrar seçmemek için kontrol
+                // Aynı gücü tekrar seçmemek için ve tema dışı güç seçmemek için deneme
                 let denemeSayaci = 0;
                 while(secilenGucler.has(guc) && denemeSayaci < 10) {
-                    guc = getRandomItem(gucTemalari[temaAdi]);
+                    const yeniTemaAdi = getRandomItem(temaHavuzu); 
+                    guc = getRandomItem(gucTemalari[yeniTemaAdi]);
                     denemeSayaci++;
                 }
                 secilenGucler.add(guc);
             }
             
-            let gucListesiHTML = Array.from(secilenGucler).map(g => {
+            // HTML ve Discord metnine çevirme
+            const gucListesiHTML = Array.from(secilenGucler).map(g => {
                 const parts = g.split(':');
                 const name = parts[0].trim();
                 const desc = parts.length > 1 ? parts[1].trim() : "Açıklaması yok.";
-                return `<li><strong>➤ ${name}</strong>: ${desc}</li>`;
+                return <li><strong>➤ ${name}</strong>: ${desc}</li>;
             }).join('');
             
-            // Tier'a göre kart rengi sınıfı atama
-            let cardClass = '';
-            if (tier >= 9) cardClass = 'card-tier-10';
-            else if (tier >= 7) cardClass = 'card-tier-8';
-            else if (tier >= 4) cardClass = 'card-tier-5';
-            else if (tier >= 2) cardClass = 'card-tier-3';
-            else cardClass = 'card-tier-1';
-            
-            // Ölümsüzlük veya özel yetenek ekleme (Yüksek Tier'lar için)
-            let ekBilgi = "";
-            if (tier === 10) ekBilgi = "<p style='color:#ff9900; font-weight:bold;'>**ÖZEL:** Mutlak Varlık. Fizik ve Metafizik Yasaların Üstündedir.</p>";
-            if (tier >= 8 && Math.random() < 0.3) ekBilgi = "<p style='color:#cc00ff; font-weight:bold;'>**ÖZEL:** Varoluş Manipülasyonu. Belli bir alandaki maddeselliği değiştirebilir.</p>";
+            const gucListesiDiscord = Array.from(secilenGucler).map(g => {
+                const parts = g.split(':');
+                const name = parts[0].trim();
+                const desc = parts.length > 1 ? parts[1].trim() : "Açıklaması yok.";
+                return **➤ ${name}**\n* ${desc};
+            }).join('\n');
 
+
+            // Tier'a göre kart rengi sınıfı atama ve Özel Bilgiler
+            let cardClass = '';
+            let ekBilgi = "";
+            let ekBilgiDiscord = "";
+            
+            if (tier === 10) {
+                cardClass = 'card-tier-10';
+                ekBilgi = "<p style='color:#ff9900; font-weight:bold;'>*ÖZEL:* Mutlak Varlık. Fizik ve Metafizik Yasaların Üstündedir. Ölümsüzdür.</p>";
+                ekBilgiDiscord = "*ÖZEL:* Mutlak Varlık. Fizik ve Metafizik Yasaların Üstündedir. Ölümsüzdür.\n";
+            } else if (tier >= 7) {
+                cardClass = 'card-tier-8';
+                if (Math.random() < 0.3) {
+                    ekBilgi = "<p style='color:#cc00ff; font-weight:bold;'>*ÖZEL:* Varoluş Manipülasyonu. Belli bir alandaki maddeselliği değiştirebilir.</p>";
+                    ekBilgiDiscord = "*ÖZEL:* Varoluş Manipülasyonu. Belli bir alandaki maddeselliği değiştirebilir.\n";
+                }
+            } else if (tier >= 4) {
+                cardClass = 'card-tier-5';
+            } else if (tier >= 2) {
+                cardClass = 'card-tier-3';
+            } else {
+                cardClass = 'card-tier-1';
+            }
+
+
+            // Discord Kopyalama Metni
+            const discordText = `
+<:mystery:1358389140273496084>〕 *${isim}*
+
+-# ➤ Can ${can} <:MC_Heart_Full:1373780419450900511>
+-# ➤ Kuvvet ${kuvvet} <:kuvvet:1400844968658075810>
+-# ➤ Yenilenme ${yenilenme}<:MC_Heart_Full:1373780419450900511>
+Tier: ${tier}
+---
+*Güçler Ve Bilgiler*
+${ekBilgiDiscord}
+${gucListesiDiscord}
+`;
 
             // HTML Kartı Oluşturma
             const characterCard = `
@@ -191,11 +264,27 @@
                     <ul class="power-list">
                         ${gucListesiHTML}
                     </ul>
+                    <button class="copy-button" onclick="copyToClipboard(this, \${discordText.trim()}\)">Discord Kopyala</button>
                 </div>
             `;
             
-            // Yeni kartı en üste ekle
             outputDiv.insertAdjacentHTML('afterbegin', characterCard);
+        }
+
+        // Kopyalama Fonksiyonu
+        function copyToClipboard(button, textToCopy) {
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                    const originalText = button.textContent;
+                    button.textContent = 'Kopyalandı!';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                    }, 1500);
+                })
+                .catch(err => {
+                    console.error('Kopyalama başarısız oldu: ', err);
+                    alert('Kopyalama başarısız oldu. Lütfen metni manuel olarak kopyalayın.');
+                });
         }
     </script>
 
